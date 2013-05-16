@@ -73,6 +73,16 @@ class Chef
         :description => "The tags for this server",
         :proc => Proc.new { |tags| tags.split(',') }
 
+      option :iam_profile_arn,
+        :long => "--iam-profile-arn ARN",
+        :description => "Amazon resource name (ARN) of the IAM Instance Profile (IIP) to associate with the instance",
+        :proc => Proc.new { |key| Chef::Config[:knife][:iam_profile_arn] = key }
+
+      option :iam_profile_name,
+        :long => "--iam-profile-name NAME",
+        :description => "The name of the IAM Instance Profile (IIP) to associate with the instance",
+        :proc => Proc.new { |key| Chef::Config[:knife][:iam_profile_name] = key }
+
       option :availability_zone,
         :short => "-Z ZONE",
         :long => "--availability-zone ZONE",
@@ -587,6 +597,11 @@ class Chef
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
           :availability_zone => locate_config_value(:availability_zone)
         }
+        iam_name = Chef::Config[:knife][:iam_profile_name]
+        server_def[:iam_instance_profile_name] = iam_name if !iam_name.nil?
+        iam_arn = Chef::Config[:knife][:iam_profile_arn]
+        server_def[:iam_instance_profile_arn] = iam_arn if !iam_arn.nil?
+
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
 
@@ -634,7 +649,6 @@ class Chef
         (config[:ephemeral] || []).each_with_index do |device_name, i|
           server_def[:block_device_mapping] = (server_def[:block_device_mapping] || []) << {'VirtualName' => "ephemeral#{i}", 'DeviceName' => device_name}
         end
-
         server_def
       end
 
